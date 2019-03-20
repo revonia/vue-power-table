@@ -1,21 +1,31 @@
 import elements from './utils/elements'
 import { vfor, vif } from './utils/directives'
-
-const emptyArr = () => []
+import { emptyArr, onlyValidColumn } from './utils/helpers'
 
 export default function (componments) {
   return {
     functional: true,
     props: {
-      tableClass: {
-        type: [String, Object, Array]
+      classes: {
+        type: Object,
+        default: function () {
+          return {
+            table: {},
+            thead: {},
+            tbody: {},
+            tfoot: {},
+            caption: {},
+            th: {},
+            td: {}
+          }
+        }
       },
-      tableFields: {
-        type: [Array],
+      tableColumns: {
+        type: Array,
         default: emptyArr
       },
       tableData: {
-        type: [Array],
+        type: Array,
         default: emptyArr
       },
       caption: {
@@ -24,47 +34,73 @@ export default function (componments) {
       tableFootData: {
         type: Array,
         default: emptyArr
+      },
+      trackBy: {
+        type: String,
+        default: 'id'
+      },
+      emit: {
+        type: Function,
+        default: null
       }
     },
-    render: function (h, { props: p, children, slot, scopedSlots }) {
+    render: function (h, { props: p, slots, scopedSlots, listeners }) {
       const {
         Table,
-        TableD,
-        TableR,
-        TableH,
-        TableCaption,
-        TableHead,
-        TableBody,
-        TableFoot
+        Td,
+        Tr,
+        Th,
+        Caption,
+        Thead,
+        Tbody,
+        Tfoot
       } = elements(h, componments)
 
-      const fields = p.tableFields
+      const columns = p.tableColumns.filter(onlyValidColumn)
       const data = p.tableData
       const footData = p.tableFootData
 
-      return Table({ class: p.tableClass }, [
-        vif(p.caption, () => TableCaption(p.caption)),
+      return Table({ class: p.classes.table }, [
+        vif(p.caption, () => Caption(p.caption)),
 
-        TableHead([TableR(
-          vfor(fields, (field, key) => {
-            return TableH({ key: key, props: field }, field.title)
+        Thead({ class: p.classes.thead }, [Tr(
+          vfor(columns, (column, key) => {
+            return Th({ class: p.classes.th, key: key, props: column }, column.title)
           })
         )]),
 
-        TableBody(vfor(data, (row, key) => {
-          return TableR(vfor(fields, (field, fieldIndex) => {
-            return TableD({
-              key: key + '-' + field.name
-            }, row[field.name])
+        Tbody({ class: p.classes.tbody }, vfor(data, (row, key) => {
+          return Tr({ class: p.classes.tr }, vfor(columns, (column, columnIndex) => {
+            return Td({
+              class: p.classes.td,
+              key: key + '-' + column.field,
+              props: {
+                rowData: row,
+                slots,
+                scopedSlots,
+                column,
+                trackBy: p.trackBy
+              },
+              on: listeners
+            })
           }))
         })),
 
         vif(p.tableFootData.length > 0, () => {
-          return TableFoot(vfor(footData, (row, key) => {
-            return TableR(vfor(fields, (field, fieldIndex) => {
-              return TableD({
-                key: 'foot-' + key + '-' + field.name
-              }, row[field.name])
+          return Tfoot({ class: p.classes.tfoot }, vfor(footData, (row, key) => {
+            return Tr(vfor(columns, (column, columnIndex) => {
+              return Td({
+                class: p.classes.td,
+                key: 'foot-' + key + '-' + column.field,
+                props: {
+                  rowData: row,
+                  slots,
+                  scopedSlots,
+                  column,
+                  trackBy: p.trackBy
+                },
+                on: listeners
+              })
             }))
           }))
         })
