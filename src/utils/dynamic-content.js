@@ -1,14 +1,15 @@
 import { get, has, stringNormalize } from './helpers'
 
-export default function tdContent (rowData, {
-  field,
-  type = null,
-  component = null,
-  rowDataAsProp = false
-} = {}, {
+export default function dynamicContent (rowData, column, {
   h, slots, scopedSlots, trackBy
 }) {
-  const column = arguments[1]
+  const {
+    field,
+    type = null,
+    component = null,
+    rowDataAsProp = false
+  } = column
+
   const props = { rowData: rowData, rowIndex: get(rowData, trackBy), column }
   switch (type) {
     case 'component':

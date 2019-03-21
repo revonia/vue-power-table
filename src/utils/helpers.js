@@ -1,4 +1,4 @@
-const isArray = Array.isArray
+export const isArray = Array.isArray
 
 export const emptyArr = () => []
 
@@ -47,9 +47,7 @@ export function mergeClassObj (...args) {
       }
     }
     if (typeof c === 'object') {
-      for (let key in c) {
-        ret[key] = c[key]
-      }
+      Object.keys(c).forEach(key => { ret[key] = c[key] })
     }
   }
   return ret
@@ -85,4 +83,27 @@ export function resolveListeners (component, listeners, ...args) {
     }
     return o
   }, {})
+}
+
+export function isDef (value) {
+  return typeof value !== 'undefined' && value !== null
+}
+
+export function defaults (value, defaultValue) {
+  return isDef(value) ? value : defaultValue
+}
+
+export function track (trackBy, data, defaultValue) {
+  return defaults(typeof trackBy === 'function' ? trackBy(data) : data[trackBy], defaultValue)
+}
+
+export function foreach (items, callback) {
+  if (!items) {
+    return []
+  }
+  if (isArray(items)) {
+    return items.map(callback)
+  } else {
+    return Object.keys(items).map((key) => callback(items[key], key, items))
+  }
 }

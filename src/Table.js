@@ -1,49 +1,11 @@
 import elements from './utils/elements'
-import { vfor, vif } from './utils/directives'
-import { emptyArr, onlyValidColumn } from './utils/helpers'
+import { defaults, onlyValidColumn, track, foreach } from './utils/helpers'
+import TableMixin from './mixins/TableMixin'
 
 export default function (componments) {
   return {
     functional: true,
-    props: {
-      classes: {
-        type: Object,
-        default: function () {
-          return {
-            table: {},
-            thead: {},
-            tbody: {},
-            tfoot: {},
-            caption: {},
-            th: {},
-            td: {}
-          }
-        }
-      },
-      tableColumns: {
-        type: Array,
-        default: emptyArr
-      },
-      tableData: {
-        type: Array,
-        default: emptyArr
-      },
-      caption: {
-        type: String
-      },
-      tableFootData: {
-        type: Array,
-        default: emptyArr
-      },
-      trackBy: {
-        type: String,
-        default: 'id'
-      },
-      emit: {
-        type: Function,
-        default: null
-      }
-    },
+    mixins: [ TableMixin ],
     render: function (h, { props: p, slots, scopedSlots, listeners }) {
       const {
         Table,
@@ -57,53 +19,58 @@ export default function (componments) {
       } = elements(h, componments)
 
       const columns = p.tableColumns.filter(onlyValidColumn)
-      const data = p.tableData
-      const footData = p.tableFootData
+      const { tableData: data, tableFootData: footData, classes, trackBy, footTrackBy } = p
 
-      return Table({ class: p.classes.table }, [
-        vif(p.caption, () => Caption(p.caption)),
-
-        Thead({ class: p.classes.thead }, [Tr(
-          vfor(columns, (column, key) => {
-            return Th({ class: p.classes.th, key: key, props: column }, column.title)
+      return Table({ class: classes.table }, [
+        p.caption ? Caption(p.caption) : null,
+        p.showHead ? Thead({ class: classes.thead }, [Tr({ class: classes.trInThead, props: { in: 'thead' } },
+          foreach(columns, (column, key) => {
+            return Th({ class: classes.thInThead, key: defaults(column.field, key), props: { column, in: 'thead' } }, column.title)
           })
-        )]),
+        )]) : null,
 
-        Tbody({ class: p.classes.tbody }, vfor(data, (row, key) => {
-          return Tr({ class: p.classes.tr }, vfor(columns, (column, columnIndex) => {
+        Tbody({ class: classes.tbody }, foreach(data, (rowData, key) => {
+          const passProps = {
+            rowData,
+            slots,
+            scopedSlots,
+            trackBy,
+            in: 'tbody',
+            tableProps: p
+          }
+          const trackKey = track(p.trackBy, rowData, key)
+          return Tr({ class: classes.trInTbody, key: trackKey, props: { in: 'tbody' } }, foreach(columns, (column) => {
             return Td({
-              class: p.classes.td,
-              key: key + '-' + column.field,
-              props: {
-                rowData: row,
-                slots,
-                scopedSlots,
-                column,
-                trackBy: p.trackBy
-              },
+              class: classes.tdInTbody,
+              key: 'tbody-' + trackKey + '-' + column.field,
+              props: { column, ...passProps },
               on: listeners
-            })
+            }, rowData[column.field])
           }))
         })),
 
-        vif(p.tableFootData.length > 0, () => {
-          return Tfoot({ class: p.classes.tfoot }, vfor(footData, (row, key) => {
-            return Tr(vfor(columns, (column, columnIndex) => {
+        (p.tableFootData.length > 0)
+          ? Tfoot({ class: classes.tfoot }, foreach(footData, (rowData, key) => {
+            const passProps = {
+              rowData,
+              slots,
+              scopedSlots,
+              trackBy: footTrackBy,
+              in: 'tfoot',
+              tableProps: p
+            }
+
+            const trackKey = track(p.trackBy, rowData, key)
+            return Tr({ class: classes.trInTfoot, key: trackKey, props: { in: 'tfoot' } }, foreach(columns, (column) => {
               return Td({
-                class: p.classes.td,
-                key: 'foot-' + key + '-' + column.field,
-                props: {
-                  rowData: row,
-                  slots,
-                  scopedSlots,
-                  column,
-                  trackBy: p.trackBy
-                },
+                class: classes.tdInTfoot,
+                key: 'tfoot-' + trackKey + '-' + column.field,
+                props: { column, ...passProps },
                 on: listeners
-              })
+              }, rowData[column.field])
             }))
           }))
-        })
+          : null
       ])
     }
   }

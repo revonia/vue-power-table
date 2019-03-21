@@ -1,40 +1,18 @@
-import tdContent from '../utils/td-content'
+import dynamicContent from '../utils/dynamic-content'
 import { resolveListeners } from '../utils/helpers'
+import TdMixin from '../mixins/TdMixin'
 
 export default {
   functional: true,
-  props: {
-    rowData: {
-      type: Object,
-      default: () => {}
-    },
-    slots: {
-      default: null
-    },
-    scopedSlots: {
-      default: null
-    },
-    column: {
-      type: Object,
-      require: true
-    },
-    trackBy: {
-      type: String,
-      default: 'id'
-    },
-    tableProps: {
-      type: Object,
-      default: () => {}
-    }
-  },
+  minixs: [TdMixin],
   render (h, { props: { rowData, emit, slots, scopedSlots, column, trackBy }, listeners }) {
     let data = {
       class: column.classes,
-      on: resolveListeners('td', listeners, rowData, column, trackBy)
+      on: resolveListeners('td', listeners, rowData, column.field, column[trackBy], column)
     }
 
     return h('td', data, [
-      tdContent(rowData, column, { h, slots, scopedSlots, trackBy })
+      dynamicContent(rowData, column, { h, slots, scopedSlots, trackBy })
     ])
   }
 }
