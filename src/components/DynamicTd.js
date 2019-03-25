@@ -4,7 +4,7 @@ import TdMixin from '../mixins/TdMixin'
 
 export default {
   functional: true,
-  minixs: [TdMixin],
+  mixins: [TdMixin],
   render (h, { props: { rowData, emit, slots, scopedSlots, column, trackBy }, listeners }) {
     let data = {
       class: column.classes,
